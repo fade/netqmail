@@ -12,10 +12,12 @@ qmailr:x:64013:64010:qmail remote:/var/lib/qmail:/bin/sh
 qmailq:x:64014:64010:qmail queue:/var/lib/qmail:/bin/sh
 qmaill:x:64015:65534:qmail log:/var/lib/qmail:/bin/sh
 qmailp:x:64016:65534:qmail pw:/var/lib/qmail:/bin/sh
+vpopmail:x:89:89::/home/vpopmail:/bin/sh
 
 /etc/group:
 qmail:x:64010:
 nofiles:x:65534:
+vchkpw:x:89:
 
 These uids and gids are mandatory for building and running qmail.  Do not
 change them while this package is installed.
