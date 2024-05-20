@@ -69,7 +69,7 @@ stralloc proto = {0};
 
 #define AUTHSLEEP 5
 
-#efine MAXHOPS 100
+#define MAXHOPS 100
 
 #define BMCHECK_BMF 0
 #define BMCHECK_BMFNR 1
