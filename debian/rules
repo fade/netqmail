@@ -81,7 +81,8 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	mv '$(DIR)'/var/lib/qmail/boot '$(DIR)'/usr/lib/qmail/
 	ln -s /usr/lib/qmail/boot '$(DIR)'/var/lib/qmail/boot
 	# control/ is /etc/qmail/
-	rmdir '$(DIR)'/var/lib/qmail/control
+	# rmdir '$(DIR)'/var/lib/qmail/control
+	rm -rf '$(DIR)'/var/lib/qmail/control
 	ln -s /etc/qmail '$(DIR)'/var/lib/qmail/control
 	# policy 10.6, create named pipe in postinst, remove in postrm
 	rm -f '$(DIR)'/var/lib/qmail/queue/lock/trigger
