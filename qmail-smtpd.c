@@ -1712,9 +1712,10 @@ void flush_io() { ssin.p = 0; flush(); }
 
 struct qmail qqt;
 unsigned int bytestooverflow = 0;
+unsigned int messagebytes = 0;
 
 void put(ch)
-char *ch;
+     char *ch;
 {
   if (bytestooverflow)
     if (!--bytestooverflow)
