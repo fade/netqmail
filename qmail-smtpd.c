@@ -26,6 +26,7 @@
 #include "timeoutread.h"
 #include "timeoutwrite.h"
 #include "commands.h"
+#include "errbits.h"
 #include "dns.h"
 #include "wait.h"
 #include "qmail-spp.h"
