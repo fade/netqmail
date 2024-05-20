@@ -1928,6 +1928,11 @@ void smtp_data(arg) char *arg; {
   }
   out(qqx + 1);
   out("\r\n");
+  enew(); eout2("Message accepted, qp ",accept_buf);
+  accept_buf[fmt_ulong(accept_buf,rcptcount)] = 0;
+  eout3(" (",accept_buf," recipients, ");
+  accept_buf[fmt_ulong(accept_buf,messagebytes)] = 0;
+  eout2(accept_buf," bytes)\n"); eflush();
 }
 
 
