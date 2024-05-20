@@ -36,6 +36,14 @@
 #include "policy.h"
 #include <string.h>
 
+#define enew()                                                          \
+  {                                                                     \
+    eout("qmail-smtpd: pid ");                                          \
+    epid();                                                                    \
+    eout3(" from ", remoteip, ": ");                                           \
+  }
+
+
 extern void spp_rcpt_accepted();
 
 /* chkuser.h will check if TLS_H is defined, so this has to come before chkuser.h */
@@ -61,7 +69,7 @@ stralloc proto = {0};
 
 #define AUTHSLEEP 5
 
-#define MAXHOPS 100
+#efine MAXHOPS 100
 
 #define BMCHECK_BMF 0
 #define BMCHECK_BMFNR 1
