@@ -61,16 +61,21 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	install -d -m0755 '$(DIR)'/usr/sbin
 	install -d -m0755 '$(DIR)'/etc/qmail
 	install -d -m0755 '$(DIR)'/usr/lib/qmail/bin
+	# install -d -m0755 '$(DIR)'/usr/lib/qmail/boot
 	install -m0755 config-fast '$(DIR)'/usr/lib/qmail/bin/config-fast
 	# move and link binaries
 	for j in `cat debian/bin`; do \
 	  mv -f '$(DIR)'/var/lib/qmail/bin/$${j} '$(DIR)'/usr/bin/$${j} && \
 	  ln -s /usr/bin/$${j} '$(DIR)'/var/lib/qmail/bin/$${j} || exit 1; \
-	done; \
+	done
 	for j in `cat debian/sbin`; do \
 	  mv -f '$(DIR)'/var/lib/qmail/bin/$${j} '$(DIR)'/usr/sbin/$${j} && \
 	  ln -s /usr/sbin/$${j} '$(DIR)'/var/lib/qmail/bin/$${j} || exit 1; \
-	done; \
+	done
+	# for j in `cat debian/boot`; do \
+	#   mv -f '$(DIR)'/var/lib/qmail/boot/$${j} '$(DIR)'/usr/lib/qmail/boot && \
+	#   ln -s '$(DIR)'/usr/lib/qmail/boot$${j} '$(DIR)'/var/lib/qmail/boot/$${j} || exit 1; \
+	# done
 	mv -f '$(DIR)'/var/lib/qmail/bin/sendmail '$(DIR)'/usr/sbin/qmail-sendmail
 	ln -s /usr/sbin/qmail-sendmail '$(DIR)'/var/lib/qmail/bin/sendmail
 	# docs are in /usr/share/doc/qmail (implicit)
@@ -110,8 +115,12 @@ install-indep: deb-checkdir deb-checkuid
 	rm -f changelog && ln -s CHANGES changelog
 
 binary: binary-indep binary-arch
+
 binary-arch: install-arch qmail.deb
-	dpkg-shlibdeps '$(DIR)'/usr/bin/* '$(DIR)'/usr/sbin/*
+	# for j in $(echo '$(DIR)'/usr/bin/*); do
+	#   ff=grep '#!/bin/sh' "$j"
+	#   if [[
+	#dpkg-shlibdeps '$(DIR)'/usr/bin/* '$(DIR)'/usr/sbin/*
 	dpkg-gencontrol -isp -pqmail -P'$(DIR)'
 	dpkg -b '$(DIR)' ..
 binary-indep: install-indep qmail-uids-gids.deb
