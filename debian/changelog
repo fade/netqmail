@@ -1,3 +1,12 @@
+netqmail (1.06-8) UNRELEASED; urgency=medium
+
+  * Non-maintainer upload.
+  * Rebase on the netqmail patchset available at
+	https://notes.sagredo.eu/en/qmail-notes-182/qmail-vpopmail-dovecot-roberto-s-qmail-notes-8.html 
+  * 
+
+ -- Brian O'Reilly <fade@deepsky.com>  Fri, 24 May 2024 19:46:31 -0400
+
 netqmail (1.06-6.2~deb10u1) buster-security; urgency=high
 
   * Non-maintainer upload by the Security Team.
