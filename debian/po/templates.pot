@@ -1,0 +1,61 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the netqmail package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: netqmail\n"
+"Report-Msgid-Bugs-To: netqmail@packages.debian.org\n"
+"POT-Creation-Date: 2026-03-21 16:40-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../qmail.templates:1001
+msgid "Fully qualified domain name for this mail server"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../qmail.templates:1001
+msgid ""
+"Enter the fully qualified domain name (FQDN) that this mail server will use "
+"to identify itself in SMTP conversations. This becomes the value of the 'me' "
+"control file and is passed to config-fast to initialise the qmail control "
+"files."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../qmail.templates:1001
+msgid "Example: mail.example.com"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../qmail.templates:2001
+msgid "Primary mail domain"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../qmail.templates:2001
+msgid ""
+"Enter the primary domain for which this server accepts mail. This will be "
+"added to the 'locals' and 'rcpthosts' control files, and used as the signing "
+"domain when generating DKIM keys."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../qmail.templates:2001
+msgid "Example: example.com"
+msgstr ""
