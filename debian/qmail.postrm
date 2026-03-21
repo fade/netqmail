@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+fi
+
 rm -f /var/lib/qmail/queue/lock/trigger
 test ! -d /var/lib/qmail/queue/lock || rmdir /var/lib/qmail/queue/lock || :
 test ! -d /var/lib/qmail/queue || rmdir /var/lib/qmail/queue || :
@@ -16,3 +20,7 @@ rm -f /etc/qmail/rcpthosts
 
 test ! -d /etc/qmail/users || rmdir /etc/qmail/users || :
 test ! -d /etc/qmail || rmdir /etc/qmail || :
+
+if [ -f /usr/share/debconf/confmodule ]; then
+    db_purge
+fi
