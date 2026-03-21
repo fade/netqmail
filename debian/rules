@@ -84,8 +84,14 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	# place boot/ into /usr/lib/qmail/, link back
 	mv '$(DIR)'/var/lib/qmail/boot '$(DIR)'/usr/lib/qmail/
 	ln -s /usr/lib/qmail/boot '$(DIR)'/var/lib/qmail/boot
-	# control/ is /etc/qmail/
-	rmdir '$(DIR)'/var/lib/qmail/control
+	# control/ is /etc/qmail/ — move any subdirs (domainkeys, cache, notlshosts)
+	# that sagredo-dev qmail creates inside control/ into etc/qmail/ first
+	if [ -d '$(DIR)'/var/lib/qmail/control ]; then \
+	  for d in '$(DIR)'/var/lib/qmail/control/*/; do \
+	    [ -d "$$d" ] && mv "$$d" '$(DIR)'/etc/qmail/ || true; \
+	  done; \
+	  rmdir '$(DIR)'/var/lib/qmail/control; \
+	fi
 	ln -s /etc/qmail '$(DIR)'/var/lib/qmail/control
 	# policy 10.6, create named pipe in postinst, remove in postrm
 	rm -f '$(DIR)'/var/lib/qmail/queue/lock/trigger
