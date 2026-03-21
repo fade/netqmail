@@ -9,6 +9,10 @@ rm -f /var/lib/qmail/queue/lock/trigger
 test ! -d /var/lib/qmail/queue/lock || rmdir /var/lib/qmail/queue/lock || :
 test ! -d /var/lib/qmail/queue || rmdir /var/lib/qmail/queue || :
 test ! -d /var/lib/qmail || rmdir /var/lib/qmail || :
+# Remove compatibility symlink if it points to our directory
+if [ -L /var/qmail ] && [ "$(readlink /var/qmail)" = /var/lib/qmail ]; then
+    rm -f /var/qmail
+fi
 
 test "$1" = 'purge' || exit 0
 rm -f /etc/qmail/users/*

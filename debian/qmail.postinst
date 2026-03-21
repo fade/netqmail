@@ -18,6 +18,11 @@ configure() {
         *) echo "ERROR: '$QMAIL_HOSTNAME' is not a fully qualified domain name" >&2; exit 1 ;;
     esac
 
+    # Compatibility symlink: many tools (vpopmail, scripts) expect /var/qmail
+    if [ ! -e /var/qmail ]; then
+        ln -s /var/lib/qmail /var/qmail
+    fi
+
     # Policy 10.6: create named pipe not included in the package
     if [ ! -p "$QMAILDIR/queue/lock/trigger" ]; then
         rm -f "$QMAILDIR/queue/lock/trigger"
