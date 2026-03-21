@@ -20,7 +20,6 @@ qmail-qmqpc
 qmail-qmqpd
 qmail-qmtpd
 qmail-smtpd
-qmail-verify
 qmail-dkim
 dkim
 dknewkey
