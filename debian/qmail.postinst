@@ -7,6 +7,56 @@ QMAILDIR=/var/lib/qmail
 CTRLDIR=/etc/qmail
 DKIM_SELECTOR=default
 
+# migrate_legacy_qmail: called when /var/qmail exists as a real directory
+# (i.e. a pre-existing qmail installation with the classic layout).
+# Migrates control files, users database, and mail queue into the
+# /var/lib/qmail + /etc/qmail layout used by this package, then
+# replaces /var/qmail with a compatibility symlink.
+migrate_legacy_qmail() {
+    echo "Found legacy qmail installation at /var/qmail — migrating configuration..."
+
+    # Control files: only migrate if /var/qmail/control is a real directory.
+    # If it is already a symlink it is already wired to the right place.
+    if [ -d /var/qmail/control ] && [ ! -L /var/qmail/control ]; then
+        for f in /var/qmail/control/*; do
+            [ -f "$f" ] || continue
+            fname=$(basename "$f")
+            [ -f "$CTRLDIR/$fname" ] || install -m 644 "$f" "$CTRLDIR/$fname"
+        done
+        # Subdirectories (domainkeys, cache, notlshosts, …)
+        for d in /var/qmail/control/*/; do
+            [ -d "$d" ] || continue
+            dname=$(basename "$d")
+            [ -d "$CTRLDIR/$dname" ] || cp -a "$d" "$CTRLDIR/$dname"
+        done
+    fi
+
+    # User assignments: only migrate if /var/qmail/users is a real directory.
+    if [ -d /var/qmail/users ] && [ ! -L /var/qmail/users ] \
+            && [ -f /var/qmail/users/assign ] \
+            && [ ! -f "$QMAILDIR/users/assign" ]; then
+        install -m 644 /var/qmail/users/assign "$QMAILDIR/users/assign"
+        [ -f /var/qmail/users/cdb ] \
+            && install -m 644 /var/qmail/users/cdb "$QMAILDIR/users/cdb" \
+            || true
+    fi
+
+    # Mail queue: only move if /var/qmail/queue is a real directory.
+    # If it is a symlink it already points to the live queue; leave it.
+    if [ -d /var/qmail/queue ] && [ ! -L /var/qmail/queue ] \
+            && [ ! -d "$QMAILDIR/queue" ]; then
+        mv /var/qmail/queue "$QMAILDIR/queue"
+    fi
+
+    # Archive the legacy tree (remaining real files; symlinks are preserved
+    # as-is inside the archive directory).
+    LEGACY_BACKUP="/var/qmail.pre-dsmr-$(date +%Y%m%d%H%M%S)"
+    echo "Archiving legacy /var/qmail to ${LEGACY_BACKUP}"
+    mv /var/qmail "$LEGACY_BACKUP"
+
+    ln -s "$QMAILDIR" /var/qmail
+}
+
 configure() {
     db_get qmail/hostname
     QMAIL_HOSTNAME="$RET"
@@ -18,9 +68,14 @@ configure() {
         *) echo "ERROR: '$QMAIL_HOSTNAME' is not a fully qualified domain name" >&2; exit 1 ;;
     esac
 
-    # Compatibility symlink: many tools (vpopmail, scripts) expect /var/qmail
-    if [ ! -e /var/qmail ]; then
-        ln -s /var/lib/qmail /var/qmail
+    # /var/qmail compatibility symlink.
+    # If a real legacy directory exists, migrate its contents first.
+    if [ -L /var/qmail ]; then
+        : # already a symlink — nothing to do
+    elif [ -d /var/qmail ]; then
+        migrate_legacy_qmail
+    else
+        ln -s "$QMAILDIR" /var/qmail
     fi
 
     # Policy 10.6: create named pipe not included in the package
@@ -30,21 +85,20 @@ configure() {
         chown qmails:qmail "$QMAILDIR/queue/lock/trigger"
     fi
 
-    # Run config-fast if this is a fresh install (no 'me' yet)
+    # Run config-fast only on a fresh install (no 'me' control file yet).
     if [ ! -f "$CTRLDIR/me" ]; then
         /usr/lib/qmail/bin/config-fast "$QMAIL_HOSTNAME"
-        # Add primary domain to locals and rcpthosts
         grep -qxF "$QMAIL_DOMAIN" "$CTRLDIR/locals" \
             || echo "$QMAIL_DOMAIN" >> "$CTRLDIR/locals"
         grep -qxF "$QMAIL_DOMAIN" "$CTRLDIR/rcpthosts" \
             || echo "$QMAIL_DOMAIN" >> "$CTRLDIR/rcpthosts"
     fi
 
-    # Auxiliary control files
-    [ -f "$CTRLDIR/concurrencyincoming" ] || echo 20  > "$CTRLDIR/concurrencyincoming"
-    [ -f "$CTRLDIR/softlimit"           ] || echo 12000000 > "$CTRLDIR/softlimit"
+    # Auxiliary control files (created only if absent)
+    [ -f "$CTRLDIR/concurrencyincoming" ] || echo 20        > "$CTRLDIR/concurrencyincoming"
+    [ -f "$CTRLDIR/softlimit"           ] || echo 12000000  > "$CTRLDIR/softlimit"
 
-    # TCP rules for SMTP (port 25): localhost relays, everyone else receives only
+    # TCP rules — SMTP port 25
     if [ ! -f "$CTRLDIR/tcp.smtp.cdb" ]; then
         cat > "$CTRLDIR/tcp.smtp" <<'EOF'
 127.:allow,RELAYCLIENT=""
@@ -55,7 +109,7 @@ EOF
         rm -f "$CTRLDIR/tcp.smtp.tmp"
     fi
 
-    # TCP rules for submission (port 587): accept all, SMTPAUTH enforces login
+    # TCP rules — submission port 587
     if [ ! -f "$CTRLDIR/tcp.submission.cdb" ]; then
         cat > "$CTRLDIR/tcp.submission" <<'EOF'
 127.:allow,RELAYCLIENT=""
@@ -90,7 +144,7 @@ EOF
         chown root:qmail "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
     fi
 
-    # filterargs: environment for spawn-filter (DKIM signing on outbound mail)
+    # filterargs: spawn-filter environment for outbound DKIM signing
     if [ ! -f "$CTRLDIR/filterargs" ]; then
         cat > "$CTRLDIR/filterargs" <<EOF
 DKIMSIGNKEYDIR=${DKIM_KEYDIR}
@@ -99,7 +153,7 @@ EOF
         chown root:qmail "$CTRLDIR/filterargs"
     fi
 
-    # dkimsignheader: headers included in DKIM signature
+    # dkimsignheader: headers to include in DKIM signature
     if [ ! -f "$CTRLDIR/dkimsignheader" ]; then
         cat > "$CTRLDIR/dkimsignheader" <<'EOF'
 From

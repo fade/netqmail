@@ -13,6 +13,8 @@ Depends: ${shlibs:Depends}, qmail-uids-gids (>> 1.06),
  debconf, openssl, ucspi-tcp | ucspi-tcp-ipv6
 Recommends: daemontools-run, vpopmail, ucspi-ssl
 Suggests: fastforward, dot-forward, qmail-tools
+Breaks: netqmail
+Replaces: netqmail
 Description: a secure, reliable, efficient, simple message transfer agent
  qmail is meant as a replacement for the entire sendmail-binmail system on
  typical Internet-connected UNIX hosts.
