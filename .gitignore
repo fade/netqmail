@@ -210,3 +210,11 @@ conf-policy.temp
 unittest_stralloc
 qtmp.h
 helodnscheck
+
+# Debian build artifacts
+*.orig
+*.rej
+build.out
+build-stamp
+patch-stamp
+conf-qmail{orig}
