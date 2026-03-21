@@ -65,8 +65,6 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	sed 's|\$$SRCDIR/scripts/example-supervise|/var/lib/qmail/doc/example-supervise|g' \
 	  config-fast > '$(DIR)'/usr/lib/qmail/bin/config-fast
 	chmod 0755 '$(DIR)'/usr/lib/qmail/bin/config-fast
-	# Install the example supervise scripts into the doc directory
-	cp -rp scripts/example-supervise '$(DIR)'/var/lib/qmail/doc/
 	# move and link binaries
 	for j in `cat debian/bin`; do \
 	  mv -f '$(DIR)'/var/lib/qmail/bin/$${j} '$(DIR)'/usr/bin/$${j} && \
@@ -83,6 +81,8 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	# docs are in /usr/share/doc/qmail (implicit)
 	rm -rf '$(DIR)'/var/lib/qmail/doc
 	ln -s /usr/share/doc/qmail '$(DIR)'/var/lib/qmail/doc
+	# Install example supervise scripts into the doc directory (after symlink is set up)
+	cp -rp scripts/example-supervise '$(DIR)'/usr/share/doc/qmail/
 	# place users/ into /etc/qmail/, link back
 	mv '$(DIR)'/var/lib/qmail/users '$(DIR)'/etc/qmail/
 	ln -s /etc/qmail/users '$(DIR)'/var/lib/qmail/users
