@@ -82,6 +82,7 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	rm -rf '$(DIR)'/var/lib/qmail/doc
 	ln -s /usr/share/doc/qmail '$(DIR)'/var/lib/qmail/doc
 	# Install example supervise scripts into the doc directory (after symlink is set up)
+	install -d '$(DIR)'/usr/share/doc/qmail
 	cp -rp scripts/example-supervise '$(DIR)'/usr/share/doc/qmail/
 	# place users/ into /etc/qmail/, link back
 	mv '$(DIR)'/var/lib/qmail/users '$(DIR)'/etc/qmail/
