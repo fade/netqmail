@@ -1,58 +1,148 @@
 #!/bin/sh
 set -e
 
-stopinst() {
-  cat <<-EOT >&2
-	
-	The hostname -f command returned: $1
-	
-	Your system needs to have a fully qualified domain name (fqdn) in
-	order to install the var-qmail packages.
-	
-	Installation aborted.
-	
-	EOT
-  exit 1
+. /usr/share/debconf/confmodule
+
+QMAILDIR=/var/lib/qmail
+CTRLDIR=/etc/qmail
+DKIM_SELECTOR=default
+
+configure() {
+    db_get qmail/hostname
+    QMAIL_HOSTNAME="$RET"
+    db_get qmail/domain
+    QMAIL_DOMAIN="$RET"
+
+    case "$QMAIL_HOSTNAME" in
+        *.*) ;;
+        *) echo "ERROR: '$QMAIL_HOSTNAME' is not a fully qualified domain name" >&2; exit 1 ;;
+    esac
+
+    # Policy 10.6: create named pipe not included in the package
+    if [ ! -p "$QMAILDIR/queue/lock/trigger" ]; then
+        rm -f "$QMAILDIR/queue/lock/trigger"
+        mkfifo -m0622 "$QMAILDIR/queue/lock/trigger"
+        chown qmails:qmail "$QMAILDIR/queue/lock/trigger"
+    fi
+
+    # Run config-fast if this is a fresh install (no 'me' yet)
+    if [ ! -f "$CTRLDIR/me" ]; then
+        /usr/lib/qmail/bin/config-fast "$QMAIL_HOSTNAME"
+        # Add primary domain to locals and rcpthosts
+        grep -qxF "$QMAIL_DOMAIN" "$CTRLDIR/locals" \
+            || echo "$QMAIL_DOMAIN" >> "$CTRLDIR/locals"
+        grep -qxF "$QMAIL_DOMAIN" "$CTRLDIR/rcpthosts" \
+            || echo "$QMAIL_DOMAIN" >> "$CTRLDIR/rcpthosts"
+    fi
+
+    # Auxiliary control files
+    [ -f "$CTRLDIR/concurrencyincoming" ] || echo 20  > "$CTRLDIR/concurrencyincoming"
+    [ -f "$CTRLDIR/softlimit"           ] || echo 12000000 > "$CTRLDIR/softlimit"
+
+    # TCP rules for SMTP (port 25): localhost relays, everyone else receives only
+    if [ ! -f "$CTRLDIR/tcp.smtp.cdb" ]; then
+        cat > "$CTRLDIR/tcp.smtp" <<'EOF'
+127.:allow,RELAYCLIENT=""
+:allow,
+EOF
+        /usr/bin/tcprules "$CTRLDIR/tcp.smtp.cdb" "$CTRLDIR/tcp.smtp.tmp" \
+            < "$CTRLDIR/tcp.smtp"
+        rm -f "$CTRLDIR/tcp.smtp.tmp"
+    fi
+
+    # TCP rules for submission (port 587): accept all, SMTPAUTH enforces login
+    if [ ! -f "$CTRLDIR/tcp.submission.cdb" ]; then
+        cat > "$CTRLDIR/tcp.submission" <<'EOF'
+127.:allow,RELAYCLIENT=""
+:allow,
+EOF
+        /usr/bin/tcprules "$CTRLDIR/tcp.submission.cdb" "$CTRLDIR/tcp.submission.tmp" \
+            < "$CTRLDIR/tcp.submission"
+        rm -f "$CTRLDIR/tcp.submission.tmp"
+    fi
+
+    # Self-signed TLS certificate
+    if [ ! -f "$CTRLDIR/servercert.pem" ]; then
+        echo "Generating self-signed TLS certificate for ${QMAIL_HOSTNAME}..."
+        openssl req -new -x509 -nodes -days 3650 \
+            -subj "/CN=${QMAIL_HOSTNAME}" \
+            -out  "$CTRLDIR/servercert.pem" \
+            -keyout "$CTRLDIR/servercert.pem" 2>/dev/null
+        chmod 640 "$CTRLDIR/servercert.pem"
+        chown root:qmail "$CTRLDIR/servercert.pem"
+    fi
+
+    # DKIM private key
+    DKIM_KEYDIR="$CTRLDIR/domainkeys"
+    mkdir -p "$DKIM_KEYDIR"
+    chmod 750 "$DKIM_KEYDIR"
+    chown root:qmail "$DKIM_KEYDIR"
+    if [ ! -f "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}" ]; then
+        echo "Generating DKIM private key for ${QMAIL_DOMAIN} (selector: ${DKIM_SELECTOR})..."
+        openssl genrsa \
+            -out "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}" 2048 2>/dev/null
+        chmod 640 "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
+        chown root:qmail "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
+    fi
+
+    # filterargs: environment for spawn-filter (DKIM signing on outbound mail)
+    if [ ! -f "$CTRLDIR/filterargs" ]; then
+        cat > "$CTRLDIR/filterargs" <<EOF
+DKIMSIGNKEYDIR=${DKIM_KEYDIR}
+EOF
+        chmod 640 "$CTRLDIR/filterargs"
+        chown root:qmail "$CTRLDIR/filterargs"
+    fi
+
+    # dkimsignheader: headers included in DKIM signature
+    if [ ! -f "$CTRLDIR/dkimsignheader" ]; then
+        cat > "$CTRLDIR/dkimsignheader" <<'EOF'
+From
+Subject
+Date
+To
+Cc
+Message-ID
+Content-Type
+MIME-Version
+EOF
+    fi
+
+    # Log directories (owned by qmaill)
+    for svc in send smtpd submission; do
+        logdir="/var/log/qmail/$svc"
+        mkdir -p "$logdir"
+        chown qmaill:qmail "$logdir"
+        chmod 750 "$logdir"
+        if [ "$svc" = "smtpd" ]; then
+            mkdir -p "$logdir/qlog"
+            chown qmaill:qmail "$logdir/qlog"
+            chmod 750 "$logdir/qlog"
+        fi
+    done
+
+    # Install supervise scripts into /etc/service if daemontools-run is present
+    if [ -d /etc/service ]; then
+        for svc in qmail-send qmail-smtpd qmail-submission; do
+            if [ ! -d "/etc/service/$svc" ]; then
+                cp -a "/usr/lib/qmail/supervise/$svc" "/etc/service/$svc"
+            fi
+        done
+    fi
 }
-config() {
-  HN="`hostname -f 2>&1`" || stopinst "$HN"
-  echo "$HN" |grep -F . >/dev/null || stopinst "$HN"
-  /usr/lib/qmail/bin/config-fast "$HN"
-}
 
-test "$1" = 'configure' || exit 0
+test "$1" = configure || exit 0
 
-# policy 10.6: create named pipe not included in the package
-if test ! -p /var/lib/qmail/queue/lock/trigger; then
-  rm -f /var/lib/qmail/queue/lock/trigger
-  mkfifo -m0622 /var/lib/qmail/queue/lock/trigger
-  chown qmails:qmail /var/lib/qmail/queue/lock/trigger
+configure
+
+# On upgrade, restart any already-running services
+if [ -n "$2" ] && [ -x /usr/bin/svc ]; then
+    for svc in qmail-send qmail-smtpd qmail-submission; do
+        if [ -d "/etc/service/$svc" ]; then
+            echo "Restarting $svc..."
+            svc -t "/etc/service/$svc" || true
+        fi
+    done
 fi
 
-if test -f /var/lib/qmail/control/me; then
-  cat <<-\EOT
-	You already have a '/var/lib/qmail/control/me', assuming that
-	qmail on your system is already configured.
-	EOT
-else
-  config
-fi
-
-test -n "$2" || exit 0
-
-# upgrading
-if test ! -x /usr/sbin/update-service; then
-  cat <<-\EOT
-	The update-service program is not available, assuming no qmail
-	services need to be restarted.
-	EOT
-  exit 0
-fi
-if update-service --check qmail-send; then
-  echo 'Restarting qmail-send...'
-  svc -t /etc/service/qmail-send
-fi
-if update-service --check qmail-verify; then 
-  echo 'Restarting qmail-verify...'
-  svc -t /etc/service/qmail-verify
-fi
+db_stop

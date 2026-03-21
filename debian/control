@@ -9,8 +9,9 @@ Rules-Requires-Root: binary-targets
 
 Package: qmail
 Architecture: any
-Depends: ${shlibs:Depends}, qmail-uids-gids (>> 1.06)
-Recommends: qmail-run (>= 2.0.0)
+Depends: ${shlibs:Depends}, qmail-uids-gids (>> 1.06),
+ debconf, openssl, ucspi-tcp | ucspi-tcp-ipv6
+Recommends: daemontools-run, vpopmail, ucspi-ssl
 Suggests: fastforward, dot-forward, qmail-tools
 Description: a secure, reliable, efficient, simple message transfer agent
  qmail is meant as a replacement for the entire sendmail-binmail system on

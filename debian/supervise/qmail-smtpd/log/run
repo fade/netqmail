@@ -1,0 +1,4 @@
+#!/bin/sh
+LOGDIR=/var/log/qmail/smtpd
+exec /usr/bin/setuidgid qmaill /usr/bin/multilog d n5 s16777215 "$LOGDIR" \
+    n50 s16777215 '-*' '+*qlog*' "$LOGDIR/qlog"

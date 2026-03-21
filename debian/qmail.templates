@@ -1,0 +1,18 @@
+Template: qmail/hostname
+Type: string
+Description: Fully qualified domain name for this mail server
+ Enter the fully qualified domain name (FQDN) that this mail server
+ will use to identify itself in SMTP conversations. This becomes the
+ value of the 'me' control file and is passed to config-fast to
+ initialise the qmail control files.
+ .
+ Example: mail.example.com
+
+Template: qmail/domain
+Type: string
+Description: Primary mail domain
+ Enter the primary domain for which this server accepts mail. This
+ will be added to the 'locals' and 'rcpthosts' control files, and
+ used as the signing domain when generating DKIM keys.
+ .
+ Example: example.com

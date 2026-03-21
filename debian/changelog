@@ -12,6 +12,13 @@ netqmail (1.06.3-1) UNRELEASED; urgency=medium
   * Fix debian/rules: reference doc/CHANGES (upstream moved from CHANGES).
   * Add debian/gbp.conf for DEP-14 git-buildpackage workflow.
   * Add debian/source/format: 3.0 (quilt).
+  * Add debconf hostname/domain questions (qmail.config + qmail.templates).
+  * Rewrite qmail.postinst: use debconf values, generate TLS cert, DKIM
+    keypair, TCP rules CDB files, log directories, and supervise scripts.
+  * Add supervise run scripts for qmail-send, qmail-smtpd, qmail-submission
+    in debian/supervise/, installed to /usr/lib/qmail/supervise/.
+  * Add Depends: debconf, openssl, ucspi-tcp; Recommends: daemontools-run,
+    vpopmail, ucspi-ssl.
   * Target: Debian 13 Trixie.
 
  -- Brian O'Reilly <fade@deepsky.com>  Fri, 21 Mar 2026 00:00:00 +0000

@@ -114,6 +114,14 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	    '$(DIR)'/usr/share/man/man$${i##*.}/$${i}qmail || exit 1; \
 	done
 	gzip -9 '$(DIR)'/usr/share/man/man?/*
+	# Install supervise run scripts to /usr/lib/qmail/supervise/
+	for svc in qmail-send qmail-smtpd qmail-submission; do \
+	  install -d '$(DIR)'/usr/lib/qmail/supervise/$$svc/log; \
+	  install -m 0755 debian/supervise/$$svc/run \
+	    '$(DIR)'/usr/lib/qmail/supervise/$$svc/run; \
+	  install -m 0755 debian/supervise/$$svc/log/run \
+	    '$(DIR)'/usr/lib/qmail/supervise/$$svc/log/run; \
+	done
 	# changelog
 	rm -f changelog && ln -s doc/CHANGES changelog
 install-indep: deb-checkdir deb-checkuid

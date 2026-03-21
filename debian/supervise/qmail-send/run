@@ -1,0 +1,12 @@
+#!/bin/sh
+QMAILDIR=$(getent passwd qmaild | cut -d: -f6)
+
+# If filterargs exists, sign outbound mail via spawn-filter (DKIM)
+if [ -r "$QMAILDIR/control/filterargs" ]; then
+    exec env - PATH="$QMAILDIR/bin:$PATH" \
+        QMAILREMOTE="$QMAILDIR/bin/spawn-filter" \
+        qmail-start ./Maildir
+else
+    exec env - PATH="$QMAILDIR/bin:$PATH" \
+        qmail-start ./Maildir
+fi

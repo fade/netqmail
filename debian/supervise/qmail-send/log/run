@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/setuidgid qmaill /usr/bin/multilog d s16777215 /var/log/qmail/send
