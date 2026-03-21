@@ -3,7 +3,7 @@ Section: mail
 Priority: optional
 Maintainer: Brian O'Reilly <fade@deepsky.com>
 Build-Depends: qmail-uids-gids (>> 1.06), groff-base, libssl-dev,
- libsrs2-dev, libidn2-dev, po-debconf
+ libsrs2-dev, libidn2-dev
 Standards-Version: 4.6.2
 Rules-Requires-Root: binary-targets
 

@@ -43,7 +43,7 @@ configure() {
     if [ ! -f "$CTRLDIR/tcp.smtp.cdb" ]; then
         cat > "$CTRLDIR/tcp.smtp" <<'EOF'
 127.:allow,RELAYCLIENT=""
-:allow,
+:allow
 EOF
         tcprules "$CTRLDIR/tcp.smtp.cdb" "$CTRLDIR/tcp.smtp.tmp" \
             < "$CTRLDIR/tcp.smtp"
@@ -54,7 +54,7 @@ EOF
     if [ ! -f "$CTRLDIR/tcp.submission.cdb" ]; then
         cat > "$CTRLDIR/tcp.submission" <<'EOF'
 127.:allow,RELAYCLIENT=""
-:allow,
+:allow
 EOF
         tcprules "$CTRLDIR/tcp.submission.cdb" "$CTRLDIR/tcp.submission.tmp" \
             < "$CTRLDIR/tcp.submission"
