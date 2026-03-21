@@ -71,6 +71,8 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	  mv -f '$(DIR)'/var/lib/qmail/bin/$${j} '$(DIR)'/usr/sbin/$${j} && \
 	  ln -s /usr/sbin/$${j} '$(DIR)'/var/lib/qmail/bin/$${j} || exit 1; \
 	done
+	# spfquery is built but not installed by hier.c; install it manually
+	install -m 0755 spfquery '$(DIR)'/usr/sbin/spfquery
 	mv -f '$(DIR)'/var/lib/qmail/bin/sendmail '$(DIR)'/usr/sbin/qmail-sendmail
 	ln -s /usr/sbin/qmail-sendmail '$(DIR)'/var/lib/qmail/bin/sendmail
 	# docs are in /usr/share/doc/qmail (implicit)
