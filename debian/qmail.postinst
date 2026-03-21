@@ -45,7 +45,7 @@ configure() {
 127.:allow,RELAYCLIENT=""
 :allow,
 EOF
-        /usr/bin/tcprules "$CTRLDIR/tcp.smtp.cdb" "$CTRLDIR/tcp.smtp.tmp" \
+        tcprules "$CTRLDIR/tcp.smtp.cdb" "$CTRLDIR/tcp.smtp.tmp" \
             < "$CTRLDIR/tcp.smtp"
         rm -f "$CTRLDIR/tcp.smtp.tmp"
     fi
@@ -56,7 +56,7 @@ EOF
 127.:allow,RELAYCLIENT=""
 :allow,
 EOF
-        /usr/bin/tcprules "$CTRLDIR/tcp.submission.cdb" "$CTRLDIR/tcp.submission.tmp" \
+        tcprules "$CTRLDIR/tcp.submission.cdb" "$CTRLDIR/tcp.submission.tmp" \
             < "$CTRLDIR/tcp.submission"
         rm -f "$CTRLDIR/tcp.submission.tmp"
     fi
@@ -136,7 +136,7 @@ test "$1" = configure || exit 0
 configure
 
 # On upgrade, restart any already-running services
-if [ -n "$2" ] && [ -x /usr/bin/svc ]; then
+if [ -n "$2" ] && command -v svc >/dev/null 2>&1; then
     for svc in qmail-send qmail-smtpd qmail-submission; do
         if [ -d "/etc/service/$svc" ]; then
             echo "Restarting $svc..."

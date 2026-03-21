@@ -53,9 +53,12 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	 qmail-newu qmail-pop3d qmail-popup qmail-pw2u qmail-qmqpc \
 	 qmail-qmqpd qmail-qmtpd qmail-qread qmail-queue qmail-remote \
 	 qmail-rspawn qmail-send qmail-showctl qmail-smtpd qmail-start \
-	 qmail-tcpok qmail-tcpto qreceipt qsmhook sendmail splogger tcp-env; \
-	  do $(STRIP) -R .comment -R .note '$(DIR)'/var/lib/qmail/bin/$$i \
-	    || exit 1; \
+	 qmail-tcpok qmail-tcpto qreceipt qsmhook sendmail splogger tcp-env \
+	 dkim qmail-dkim spawn-filter surblfilter surblqueue srsfilter \
+	 update_tmprsadh qmail-newmvrt qmail-todo; \
+	  do test -f '$(DIR)'/var/lib/qmail/bin/$$i && \
+	    $(STRIP) -R .comment -R .note '$(DIR)'/var/lib/qmail/bin/$$i \
+	    || true; \
 	done
 	install -d -m0755 '$(DIR)'/usr/bin
 	install -d -m0755 '$(DIR)'/usr/sbin
@@ -76,6 +79,10 @@ install-arch: deb-checkdir deb-checkuid build-stamp
 	done
 	# spfquery is built but not installed by hier.c; install it manually
 	install -m 0755 spfquery '$(DIR)'/usr/sbin/spfquery
+	$(STRIP) -R .comment -R .note '$(DIR)'/usr/sbin/spfquery
+	# Strip ELF binaries in plugins (e.g. helodnscheck)
+	find '$(DIR)'/var/lib/qmail/plugins -maxdepth 1 -type f | \
+	  xargs -r $(STRIP) -R .comment -R .note 2>/dev/null || true
 	mv -f '$(DIR)'/var/lib/qmail/bin/sendmail '$(DIR)'/usr/sbin/qmail-sendmail
 	ln -s /usr/sbin/qmail-sendmail '$(DIR)'/var/lib/qmail/bin/sendmail
 	# docs are in /usr/share/doc/qmail (implicit)
