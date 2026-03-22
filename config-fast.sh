@@ -57,5 +57,5 @@ EOF
 chown root:qmail QMAIL/control/smtpplugins
 
 ########### supervise
-echo "Copying the supervise scripts in QMAIL/doc/example-supervise"
-cp -rp $SRCDIR/scripts/example-supervise QMAIL/doc/
+# example-supervise is already installed to /usr/share/doc/qmail/example-supervise
+# by the Debian package; no copy needed here.
