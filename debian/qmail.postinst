@@ -120,15 +120,26 @@ EOF
         rm -f "$CTRLDIR/tcp.submission.tmp"
     fi
 
-    # Self-signed TLS certificate
+    # TLS certificate — prefer Let's Encrypt over self-signed
     if [ ! -f "$CTRLDIR/servercert.pem" ]; then
-        echo "Generating self-signed TLS certificate for ${QMAIL_HOSTNAME}..."
-        openssl req -new -x509 -nodes -days 3650 \
-            -subj "/CN=${QMAIL_HOSTNAME}" \
-            -out  "$CTRLDIR/servercert.pem" \
-            -keyout "$CTRLDIR/servercert.pem" 2>/dev/null
+        LE_DIR="/etc/letsencrypt/live/${QMAIL_HOSTNAME}"
+        if [ -f "${LE_DIR}/fullchain.pem" ] && [ -f "${LE_DIR}/privkey.pem" ]; then
+            echo "Using Let's Encrypt certificate for ${QMAIL_HOSTNAME}..."
+            cat "${LE_DIR}/fullchain.pem" "${LE_DIR}/privkey.pem" \
+                > "$CTRLDIR/servercert.pem"
+        else
+            echo "Generating self-signed TLS certificate for ${QMAIL_HOSTNAME}..."
+            openssl req -new -x509 -nodes -days 3650 \
+                -subj "/CN=${QMAIL_HOSTNAME}" \
+                -out  "$CTRLDIR/servercert.pem" \
+                -keyout "$CTRLDIR/servercert.pem" 2>/dev/null
+        fi
+    fi
+    # qmail-smtpd runs as uid=vpopmail gid=vchkpw; cert must be readable by
+    # that process.  Always correct the group in case of a legacy root:qmail cert.
+    if [ -f "$CTRLDIR/servercert.pem" ]; then
         chmod 640 "$CTRLDIR/servercert.pem"
-        chown root:qmail "$CTRLDIR/servercert.pem"
+        chown root:vchkpw "$CTRLDIR/servercert.pem"
     fi
 
     # DKIM private key
@@ -136,13 +147,33 @@ EOF
     mkdir -p "$DKIM_KEYDIR"
     chmod 750 "$DKIM_KEYDIR"
     chown root:qmail "$DKIM_KEYDIR"
-    if [ ! -f "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}" ]; then
+    DKIM_KEY="$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
+    if [ ! -f "$DKIM_KEY" ]; then
         echo "Generating DKIM private key for ${QMAIL_DOMAIN} (selector: ${DKIM_SELECTOR})..."
-        openssl genrsa \
-            -out "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}" 2048 2>/dev/null
-        chmod 640 "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
-        chown root:qmail "$DKIM_KEYDIR/${QMAIL_DOMAIN}:${DKIM_SELECTOR}"
+        openssl genrsa -out "$DKIM_KEY" 2048 2>/dev/null
+        chmod 640 "$DKIM_KEY"
+        chown root:qmail "$DKIM_KEY"
     fi
+    # Always (re)export the public key file so it reflects the current key.
+    DKIM_PUBKEY=$(openssl rsa -in "$DKIM_KEY" -pubout 2>/dev/null \
+        | grep -v -- "^-----" | tr -d '\n')
+    printf '%s\n' "$DKIM_PUBKEY" > "${DKIM_KEY}.pub"
+    chmod 640 "${DKIM_KEY}.pub"
+    chown root:qmail "${DKIM_KEY}.pub"
+    # Print DNS record to console for the admin to action.
+    cat <<EOF
+
+============================================================
+ACTION REQUIRED — add this DNS record to ${QMAIL_DOMAIN} before
+starting mail services:
+
+  ${DKIM_SELECTOR}._domainkey.${QMAIL_DOMAIN}. 300 IN TXT \\
+    "v=DKIM1; k=rsa; p=${DKIM_PUBKEY}"
+
+Public key also saved to: ${DKIM_KEY}.pub
+============================================================
+
+EOF
 
     # filterargs: spawn-filter environment for outbound DKIM signing
     if [ ! -f "$CTRLDIR/filterargs" ]; then
@@ -180,28 +211,11 @@ EOF
         fi
     done
 
-    # Install supervise scripts into /etc/service if daemontools-run is present
-    if [ -d /etc/service ]; then
-        for svc in qmail-send qmail-smtpd qmail-submission; do
-            if [ ! -d "/etc/service/$svc" ]; then
-                cp -a "/usr/lib/qmail/supervise/$svc" "/etc/service/$svc"
-            fi
-        done
-    fi
+    # Service wiring is handled by dsmr-qmail-run, not here.
 }
 
 test "$1" = configure || exit 0
 
 configure
-
-# On upgrade, restart any already-running services
-if [ -n "$2" ] && command -v svc >/dev/null 2>&1; then
-    for svc in qmail-send qmail-smtpd qmail-submission; do
-        if [ -d "/etc/service/$svc" ]; then
-            echo "Restarting $svc..."
-            svc -t "/etc/service/$svc" || true
-        fi
-    done
-fi
 
 db_stop

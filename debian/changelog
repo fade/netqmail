@@ -1,3 +1,30 @@
+netqmail (1.06.3-5) trixie; urgency=medium
+
+  * postinst: set servercert.pem group to vchkpw (not qmail); qmail-smtpd
+    runs as uid=vpopmail gid=vchkpw and could not read the cert, causing
+    STARTTLS to fail with "454 TLS missing certificate: Permission denied".
+    Also always correct the group on upgrade, not just on fresh install.
+
+ -- Brian O'Reilly <fade@deepsky.com>  Fri, 03 Apr 2026 15:43:10 -0400
+
+netqmail (1.06.3-4) trixie; urgency=low
+
+  * Fix dsmr-verify pipefail bug; PostgreSQL integration validation
+
+ -- Brian O'Reilly <fade@deepsky.com>  Fri, 03 Apr 2026 15:43:10 -0400
+
+netqmail (1.06.3-3) trixie; urgency=medium
+
+  * postinst: remove service-tree copy to /etc/service; service wiring is
+    now the responsibility of the dsmr-qmail-run package.
+  * postinst: detect Let's Encrypt certificate at
+    /etc/letsencrypt/live/<hostname>/ and use it for servercert.pem in
+    preference to a self-signed certificate.
+  * postinst: export DKIM public key to <domain>:default.pub and print the
+    DNS TXT record to console after key generation.
+
+ -- Brian O'Reilly <fade@deepsky.com>  Fri, 03 Apr 2026 00:00:00 +0000
+
 netqmail (1.06.3-2) trixie; urgency=medium
 
   * config-fast: remove redundant cp of example-supervise directory which
